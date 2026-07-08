@@ -1,0 +1,568 @@
+{
+  "name": "Main",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "@devlikeapro/n8n-nodes-waha.wahaTrigger",
+      "typeVersion": 202502,
+      "position": [
+        0,
+        0
+      ],
+      "id": "7c3e9729-07d6-4803-bd70-e5f40d3490cb",
+      "name": "WAHA Trigger",
+      "webhookId": "5d5e41c8-65e0-43cc-9a99-23bcb25e8bab"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "mCVaS2zWwSfnZ82S",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/mCVaS2zWwSfnZ82S",
+          "cachedResultName": "Auth"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "payload_from": "={{ $json.payload.from }}",
+            "name": "={{ $json.me.pushName }}",
+            "chat_id": "={{ $json.payload.id }}",
+            "payload_fromMe": "={{ $json.payload.fromMe }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "payload_fromMe",
+              "displayName": "payload_fromMe",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "payload_from",
+              "displayName": "payload_from",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        304,
+        16
+      ],
+      "name": "Call Auth",
+      "id": "c475300f-6908-400d-aaf0-c44c0e328b52"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "aa1663c9-03de-445e-a2f4-3cc5c4f072d2",
+              "leftValue": "={{ $json.user[0].is_admin }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        800,
+        0
+      ],
+      "id": "598e86b1-5003-4f45-9575-35e0cb5ffdb3",
+      "name": "If Admin"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "41981ca4-7b02-4859-8e5d-8d859bb15009",
+              "leftValue": "={{ $('Call Auth').item .json.isEmpty()}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        512,
+        16
+      ],
+      "id": "6fcf7942-92cc-4776-ba94-bf9184b8cf60",
+      "name": "If Authenticated"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        704,
+        224
+      ],
+      "id": "bb7c3719-752a-4a6d-835b-f6d0664e86ed",
+      "name": "User Not Authenticated"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "pwrTPilW76CQuDVk",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/pwrTPilW76CQuDVk",
+          "cachedResultName": "CustomerChatbot"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1424,
+        176
+      ],
+      "id": "d328dc0e-a2f4-4f29-8be4-659352bc1cc8",
+      "name": "CustomerChatbot"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  user:$(\"If Admin\").first().json,\n  waha: $(\"WAHA Trigger\").first().json\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        128
+      ],
+      "id": "9b0c3e3d-a0c3-45a0-bbe4-a83368dc5ff4",
+      "name": "Prepare Customer"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  user:$(\"If Admin\").first().json,\n  waha: $(\"WAHA Trigger\").first().json\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        -96
+      ],
+      "id": "9ded9ec9-57d7-4c8c-ab98-b33d4b3034b8",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "DgJop6H6O8UUzGNU",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/DgJop6H6O8UUzGNU",
+          "cachedResultName": "adminChatbot"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1392,
+        -96
+      ],
+      "id": "ac1b83ba-47ae-4972-a51e-dbe97e7f7e0b",
+      "name": "Call 'adminChatbot'"
+    }
+  ],
+  "pinData": {
+    "WAHA Trigger": [
+      {
+        "json": {
+          "id": "evt_01kx0n83jrzqfwe2qv248qkzj3",
+          "timestamp": 1783507455578,
+          "event": "message",
+          "session": "default",
+          "metadata": {},
+          "me": {
+            "id": "6282230372086@c.us",
+            "pushName": "Toko Buah Greg"
+          },
+          "payload": {
+            "id": "false_157930276028428@lid_AC6DF615D42F25B6CB873DE788B28BB8",
+            "timestamp": 1783507455,
+            "from": "157930276028428@lid",
+            "fromMe": false,
+            "source": "app",
+            "to": "6282230372086@c.us",
+            "body": "Halo kak,disini jualannya apa aja ya kak?",
+            "hasMedia": false,
+            "media": null,
+            "ack": 1,
+            "ackName": "SERVER",
+            "location": null,
+            "vCards": [],
+            "_data": {
+              "id": {
+                "fromMe": false,
+                "remote": "157930276028428@lid",
+                "id": "AC6DF615D42F25B6CB873DE788B28BB8",
+                "_serialized": "false_157930276028428@lid_AC6DF615D42F25B6CB873DE788B28BB8"
+              },
+              "viewed": false,
+              "body": "Halo kak,disini jualannya apa aja ya kak?",
+              "type": "chat",
+              "t": 1783507455,
+              "clientReceivedTsMillis": 1783507455414,
+              "serverStoreTimeMicros": 1783507455895901,
+              "notifyName": "G",
+              "from": "157930276028428@lid",
+              "to": "6282230372086@c.us",
+              "ack": 1,
+              "invis": false,
+              "isNewMsg": true,
+              "star": false,
+              "kicNotified": false,
+              "recvFresh": true,
+              "isFromTemplate": false,
+              "isAdsMedia": false,
+              "pollInvalidated": false,
+              "isSentCagPollCreation": false,
+              "latestEditMsgKey": null,
+              "latestEditSenderTimestampMs": null,
+              "mentionedJidList": [],
+              "groupMentions": [],
+              "isEventCanceled": false,
+              "eventInvalidated": false,
+              "isVcardOverMmsDocument": false,
+              "isForwarded": false,
+              "isQuestion": false,
+              "isSpoiler": false,
+              "questionReplyQuotedMessage": null,
+              "questionResponsesCount": 0,
+              "readQuestionResponsesCount": 0,
+              "forwardsCount": 0,
+              "hasReaction": false,
+              "newsletterAdminProfile": null,
+              "expiredTimestamp": null,
+              "viewMode": "VISIBLE",
+              "messageSecret": {
+                "0": 251,
+                "1": 178,
+                "2": 245,
+                "3": 134,
+                "4": 72,
+                "5": 195,
+                "6": 217,
+                "7": 206,
+                "8": 103,
+                "9": 110,
+                "10": 110,
+                "11": 103,
+                "12": 191,
+                "13": 149,
+                "14": 226,
+                "15": 122,
+                "16": 50,
+                "17": 2,
+                "18": 165,
+                "19": 46,
+                "20": 23,
+                "21": 212,
+                "22": 18,
+                "23": 153,
+                "24": 234,
+                "25": 118,
+                "26": 188,
+                "27": 61,
+                "28": 254,
+                "29": 74,
+                "30": 63,
+                "31": 190
+              },
+              "productHeaderImageRejected": false,
+              "lastPlaybackProgress": 0,
+              "isDynamicReplyButtonsMsg": false,
+              "isCarouselCard": false,
+              "parentMsgId": null,
+              "callSilenceReason": null,
+              "isVideoCall": false,
+              "callDuration": null,
+              "callCreator": null,
+              "callParticipants": null,
+              "isCallLink": null,
+              "callLinkToken": null,
+              "terminatedByDeviceSwitch": null,
+              "selfOtherDeviceConnected": null,
+              "bytesSent": null,
+              "bytesReceived": null,
+              "isMdHistoryMsg": false,
+              "stickerSentTs": 0,
+              "isAvatar": false,
+              "lastUpdateFromServerTs": 0,
+              "invokedBotWid": null,
+              "bizBotType": null,
+              "botDeepLinkToken": null,
+              "aiMediaCollectionInfo": null,
+              "expectedImageCount": null,
+              "expectedVideoCount": null,
+              "botResponseTargetId": null,
+              "botPluginType": null,
+              "botPluginReferenceIndex": null,
+              "botPluginSearchProvider": null,
+              "botPluginSearchUrl": null,
+              "botPluginSearchQuery": null,
+              "botPluginMaybeParent": false,
+              "botReelPluginThumbnailCdnUrl": null,
+              "botMessageDisclaimerText": null,
+              "botSessionTransparencyType": null,
+              "botMsgBodyType": null,
+              "botModeSelection": null,
+              "botModeOverride": null,
+              "reportingTokenInfo": {
+                "stanzaTs": 1783507455,
+                "reportingToken": {
+                  "0": 238,
+                  "1": 188,
+                  "2": 234,
+                  "3": 158,
+                  "4": 15,
+                  "5": 187,
+                  "6": 68,
+                  "7": 201,
+                  "8": 22,
+                  "9": 170,
+                  "10": 248,
+                  "11": 188,
+                  "12": 137,
+                  "13": 217,
+                  "14": 155,
+                  "15": 178
+                },
+                "version": 2,
+                "reportingTag": {
+                  "0": 1,
+                  "1": 20,
+                  "2": 248,
+                  "3": 122,
+                  "4": 189,
+                  "5": 183,
+                  "6": 205,
+                  "7": 91,
+                  "8": 55,
+                  "9": 177,
+                  "10": 43,
+                  "11": 155,
+                  "12": 197,
+                  "13": 53,
+                  "14": 249,
+                  "15": 185,
+                  "16": 50,
+                  "17": 231,
+                  "18": 73,
+                  "19": 95
+                }
+              },
+              "hatchMetadataSync": null,
+              "requiresDirectConnection": null,
+              "bizContentPlaceholderType": null,
+              "hostedBizEncStateMismatch": false,
+              "senderOrRecipientAccountTypeHosted": false,
+              "placeholderCreatedWhenAccountIsHosted": false,
+              "groupHistoryBundleMessageKey": null,
+              "groupHistoryBundleMetadata": null,
+              "groupHistoryIndividualMessageInfo": null,
+              "nonJidMentions": null,
+              "links": []
+            }
+          },
+          "engine": "WEBJS",
+          "environment": {
+            "version": "2026.2.2",
+            "engine": "WEBJS",
+            "tier": "CORE",
+            "browser": "/usr/bin/chromium",
+            "platform": "linux/x64",
+            "worker": {
+              "id": null
+            }
+          }
+        },
+        "pairedItem": {
+          "item": 0,
+          "input": 1
+        }
+      }
+    ]
+  },
+  "connections": {
+    "WAHA Trigger": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Call Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Auth": {
+      "main": [
+        [
+          {
+            "node": "If Authenticated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Admin": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Authenticated": {
+      "main": [
+        [
+          {
+            "node": "If Admin",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "User Not Authenticated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Customer": {
+      "main": [
+        [
+          {
+            "node": "CustomerChatbot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Call 'adminChatbot'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "fca7f89c-bdd8-43f8-b2d5-3ccb1ada41c4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9925848573803cd444f994174f00f257ae8f2cd861c158aef0650426695a0f0b"
+  },
+  "id": "MUf7RGfYL3oXdktI",
+  "tags": []
+}

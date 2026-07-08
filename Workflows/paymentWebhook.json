@@ -1,0 +1,311 @@
+{
+  "name": "paymentWebhook",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "3e01591e-0556-4f25-adb6-d5e7458aa755",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -368,
+        16
+      ],
+      "id": "a4e77209-2acf-47a0-8b1f-7e24827b0b3c",
+      "name": "Webhook",
+      "webhookId": "3e01591e-0556-4f25-adb6-d5e7458aa755"
+    },
+    {
+      "parameters": {
+        "resource": "Chatting",
+        "operation": "Start Typing",
+        "session": "=default",
+        "chatId": "={{ $json.phone_number }}@lid",
+        "requestOptions": {}
+      },
+      "type": "@devlikeapro/n8n-nodes-waha.WAHA",
+      "typeVersion": 202502,
+      "position": [
+        128,
+        16
+      ],
+      "id": "c1fa326b-fc2d-437a-b52f-f160e118d01b",
+      "name": "Start Typing",
+      "credentials": {
+        "wahaApi": {
+          "id": "zYVfGiFtLLjRjdn0",
+          "name": "WAHA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": "={{ Math.floor(Math.random()*5)+1 }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        320,
+        16
+      ],
+      "id": "1851af52-d75b-4ff4-a918-8d1999280fca",
+      "name": "Wait2",
+      "webhookId": "777a71df-cf84-4993-8975-23442abe46d3"
+    },
+    {
+      "parameters": {
+        "resource": "Chatting",
+        "operation": "Stop Typing",
+        "session": "=default",
+        "chatId": "={{ $('Update row(s)').item.json.phone_number }}@lid",
+        "requestOptions": {}
+      },
+      "type": "@devlikeapro/n8n-nodes-waha.WAHA",
+      "typeVersion": 202502,
+      "position": [
+        528,
+        16
+      ],
+      "id": "9a64545e-3cfc-4c22-b30e-7a7ab85cfeaf",
+      "name": "Stop Typing",
+      "credentials": {
+        "wahaApi": {
+          "id": "zYVfGiFtLLjRjdn0",
+          "name": "WAHA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": "={{ Math.floor(Math.random()*3)+1 }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        736,
+        16
+      ],
+      "id": "7d7aa90f-6226-45f1-b6c1-a2bf2c48fa65",
+      "name": "Wait3",
+      "webhookId": "c1eb06a6-5f37-470c-9f49-1ca9d439145f"
+    },
+    {
+      "parameters": {
+        "resource": "Chatting",
+        "operation": "Send Text",
+        "session": "=default",
+        "chatId": "={{ $('Update row(s)').item.json.phone_number }}@lid",
+        "text": "=Terimakasih telah membayar invoice sebesar Rp {{ $('Webhook').item.json.body.data.paymentLinkAmount }} dari {{ $('Webhook').item.json.body.data.productDescription }}",
+        "requestOptions": {}
+      },
+      "type": "@devlikeapro/n8n-nodes-waha.WAHA",
+      "typeVersion": 202502,
+      "position": [
+        928,
+        16
+      ],
+      "id": "083ca32f-4a9d-4b3e-bb92-f3a3257cee72",
+      "name": "Send a text message",
+      "credentials": {
+        "wahaApi": {
+          "id": "zYVfGiFtLLjRjdn0",
+          "name": "WAHA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "gvo2C20vOE9gNiQT",
+          "mode": "list",
+          "cachedResultName": "Invoices",
+          "cachedResultUrl": "/projects/dMsIA3pEwYnpuDsV/datatables/gvo2C20vOE9gNiQT"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "invoice_number",
+              "keyValue": "={{ $json.body.data.productDescription.match(/INV-\\d+/)[0] }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "={{ $json.body.data.status }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "phone_number",
+              "displayName": "phone_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "total_amount",
+              "displayName": "total_amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "payment_link",
+              "displayName": "payment_link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "invoice_number",
+              "displayName": "invoice_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -144,
+        16
+      ],
+      "id": "cd1ddf61-948d-4587-b3d0-00ae203253fe",
+      "name": "Update row(s)"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Update row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Typing": {
+      "main": [
+        [
+          {
+            "node": "Wait2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait2": {
+      "main": [
+        [
+          {
+            "node": "Stop Typing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stop Typing": {
+      "main": [
+        [
+          {
+            "node": "Wait3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait3": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row(s)": {
+      "main": [
+        [
+          {
+            "node": "Start Typing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "3d2a7c77-f54e-4a60-9838-2f253fe6abea",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9925848573803cd444f994174f00f257ae8f2cd861c158aef0650426695a0f0b"
+  },
+  "id": "Rpe5BH2C61R9HB6a",
+  "tags": []
+}

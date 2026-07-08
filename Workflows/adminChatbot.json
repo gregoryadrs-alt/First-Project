@@ -1,0 +1,895 @@
+{
+  "name": "adminChatbot",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "6a16a9e4-ebaa-4c17-8f93-d80297a7a482",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.waha.payload.body }}",
+        "options": {
+          "systemMessage": "=You are an intent classifier for a CRM/WhatsApp bot.\n\nReturn ONLY a valid JSON object (no markdown, no extra text).\n\nRules:\n\nChoose the best single intent from the list. If it is continuation from previous chats, then proceed it with matched or corresponding intent!. ie: if user says nama: kirim reminder ke semua user, then clearly it is REMINDER intent.\n\nIf unclear, use UNKNOWN.\n\nLanguage can be Indonesian or English.\n\nIntents:\n\nREMINDER: user asks to remind pending invoices.\n\nHELP: user asks how to use, bantuan, help.\n\nGREETINGS: user greets agent, and let agent greets them back\n\nOTHER: anything else\n\nUser message:"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "e06edcaf-7e22-45c3-bf63-2f637bb71be4",
+      "name": "Intent Classifier"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        192,
+        224
+      ],
+      "id": "66aa5129-c26d-42e2-911a-be9d52283b86",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "wW7aE1ol2thfp4oq",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.user.user[0].phone_number }}",
+        "contextWindowLength": "=5"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        320,
+        224
+      ],
+      "id": "1a7ab50a-8cd2-45be-9ef8-21d91fd07d1a",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output.parseJson().intent}}",
+                    "rightValue": "REMIINDER",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "183e963a-ede6-49ed-8c91-0b352334c338"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "REMINDER"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "71c11e4c-9904-47ed-a39b-02e08b395159",
+                    "leftValue": "={{ $json.output.parseJson().intent}}",
+                    "rightValue": "=HELP",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "HELP"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "ecf217bf-acda-4bd4-a843-72f84ebb1695",
+                    "leftValue": "={{ $json.output.parseJson().intent}}",
+                    "rightValue": "OTHER",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "OTHER"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "dda1878e-c92e-4467-babe-31a2de1b0857",
+                    "leftValue": "={{ $json.output.parseJson().intent}}",
+                    "rightValue": "GREETINGS",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "=GREETINGS"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        528,
+        -32
+      ],
+      "id": "3c047a8e-b619-4a7c-8a6a-8e94a56a4355",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "gvo2C20vOE9gNiQT",
+          "mode": "list",
+          "cachedResultName": "Invoices",
+          "cachedResultUrl": "/projects/dMsIA3pEwYnpuDsV/datatables/gvo2C20vOE9gNiQT"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "status",
+              "keyValue": "PENDING"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        896,
+        -48
+      ],
+      "id": "17f4f4c4-8396-4256-b695-de0f55e953d8",
+      "name": "Get All Pending Invoices"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2534af45-4814-49ac-9ebf-28a8f5fd2d8d",
+              "leftValue": "={{ $('Get All Pending Invoices').all().length }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            },
+            {
+              "id": "ec73210b-6934-4246-b431-c5f7bf48f0fa",
+              "leftValue": "={{ $('Get All Pending Invoices').item.json.invoice_number }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1104,
+        -48
+      ],
+      "id": "1af79e96-99a9-4079-b2c2-0d2144488d4f",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "resource": "Chatting",
+        "operation": "Send Text",
+        "reply_to": "={{ $('When Executed by Another Workflow').item.json.waha.payload.from }}",
+        "text": "tidak ada Pending Invoice",
+        "requestOptions": {}
+      },
+      "type": "@devlikeapro/n8n-nodes-waha.WAHA",
+      "typeVersion": 202502,
+      "position": [
+        1312,
+        80
+      ],
+      "id": "ce7708d0-f574-4c92-b6ce-bcb7a5fd0599",
+      "name": "Send a text message",
+      "credentials": {
+        "wahaApi": {
+          "id": "zYVfGiFtLLjRjdn0",
+          "name": "WAHA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1600,
+        -176
+      ],
+      "id": "bd19225b-6cce-4bfd-bab5-ef7667dec42a",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "nlLnpNsiAOc34po5",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/nlLnpNsiAOc34po5",
+          "cachedResultName": "generateInvoice"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone_number": "={{ $json.phone_number }}",
+            "total_amount": "={{ $json.total_amount }}",
+            "customer_name": "={{ $json.name }}",
+            "invoice_number": "={{ $json.invoice_number }}",
+            "output_items_parseJson": "={{ $json.content }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "invoice_number",
+              "displayName": "invoice_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "customer_name",
+              "displayName": "customer_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "phone_number",
+              "displayName": "phone_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "total_amount",
+              "displayName": "total_amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "output_items_parseJson",
+              "displayName": "output_items_parseJson",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1808,
+        -80
+      ],
+      "id": "81729d48-7add-42a0-acdb-ef1cf463a524",
+      "name": "Call 'generateInvoice'"
+    },
+    {
+      "parameters": {
+        "resource": "Chatting",
+        "operation": "Send Text",
+        "session": "=crm",
+        "chatId": "={{ $json.phone_number }}",
+        "reply_to": "=",
+        "text": "=mohon selesaikan pembayaran anda :  {{ $json.payment_link }}",
+        "requestOptions": {}
+      },
+      "type": "@devlikeapro/n8n-nodes-waha.WAHA",
+      "typeVersion": 202502,
+      "position": [
+        2016,
+        -80
+      ],
+      "id": "b2ccec28-635d-40f6-ba31-f8f225575d13",
+      "name": "Send a text message1",
+      "credentials": {
+        "wahaApi": {
+          "id": "zYVfGiFtLLjRjdn0",
+          "name": "WAHA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "Chatting",
+        "operation": "Send Text",
+        "session": "=crm",
+        "chatId": "={{ $('When Executed by Another Workflow').item.json.waha.payload.from }}",
+        "text": "=reminder berhasil dikirim ke {{ $('Get All Pending Invoices').all().length }} customer",
+        "requestOptions": {}
+      },
+      "type": "@devlikeapro/n8n-nodes-waha.WAHA",
+      "typeVersion": 202502,
+      "position": [
+        1808,
+        -272
+      ],
+      "id": "f61d8d8d-eb82-43df-babc-5e59c4f22356",
+      "name": "Send a text message2",
+      "credentials": {
+        "wahaApi": {
+          "id": "zYVfGiFtLLjRjdn0",
+          "name": "WAHA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('When Executed by Another Workflow').item.json.waha.payload.body }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "you are helpful assistan,reply users greeting in bahasa indonesia and casual style"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        736,
+        176
+      ],
+      "id": "05f9a63e-e7ae-4c3a-ab20-8b4370dbd6ee",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        736,
+        368
+      ],
+      "id": "494068ea-ca3e-4cd9-b49f-0e31ee29e958",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "fjfrUsTTmD37qWOi",
+          "name": "Google Gemini(PaLM) Api account 5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "Chatting",
+        "operation": "Send Text",
+        "session": "=crm",
+        "chatId": "={{ $('When Executed by Another Workflow').item.json.waha.payload.from }}",
+        "text": "={{ $json.text }}",
+        "requestOptions": {}
+      },
+      "type": "@devlikeapro/n8n-nodes-waha.WAHA",
+      "typeVersion": 202502,
+      "position": [
+        1088,
+        176
+      ],
+      "id": "900dc936-609b-4522-ac25-2cf1d285018a",
+      "name": "Send a text message3",
+      "credentials": {
+        "wahaApi": {
+          "id": "zYVfGiFtLLjRjdn0",
+          "name": "WAHA account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "user": {
+            "user": [
+              {
+                "phone_number": 157930276028428,
+                "name": "Toko Buah Greg",
+                "is_admin": false,
+                "chat_id": "false_157930276028428@lid_AC53E26CB4F820C6AEEF0C7D6D6B5D56",
+                "id": 1,
+                "createdAt": "2026-03-10T10:37:13.255Z",
+                "updatedAt": "2026-03-10T10:37:13.255Z"
+              }
+            ]
+          },
+          "waha": {
+            "id": "evt_01kwgpddev90xfcdzb9e0dqg65",
+            "timestamp": 1782971807214,
+            "event": "message",
+            "session": "default",
+            "metadata": {},
+            "me": {
+              "id": "6282230372086@c.us",
+              "pushName": "Toko Buah Greg"
+            },
+            "payload": {
+              "id": "false_157930276028428@lid_AC4BA567177C762B347BF9646BF883AA",
+              "timestamp": 1782971806,
+              "from": "157930276028428@lid",
+              "fromMe": false,
+              "source": "app",
+              "to": "6282230372086@c.us",
+              "body": "Halo bangw dksjwnjsifjejw",
+              "hasMedia": false,
+              "media": null,
+              "ack": 1,
+              "ackName": "SERVER",
+              "location": null,
+              "vCards": [],
+              "_data": {
+                "id": {
+                  "fromMe": false,
+                  "remote": "157930276028428@lid",
+                  "id": "AC4BA567177C762B347BF9646BF883AA",
+                  "_serialized": "false_157930276028428@lid_AC4BA567177C762B347BF9646BF883AA"
+                },
+                "viewed": false,
+                "body": "Halo bangw dksjwnjsifjejw",
+                "type": "chat",
+                "t": 1782971806,
+                "clientReceivedTsMillis": 1782971806581,
+                "serverStoreTimeMicros": 1782971806738711,
+                "notifyName": "G",
+                "from": "157930276028428@lid",
+                "to": "6282230372086@c.us",
+                "ack": 1,
+                "invis": false,
+                "isNewMsg": true,
+                "star": false,
+                "kicNotified": false,
+                "recvFresh": true,
+                "isFromTemplate": false,
+                "isAdsMedia": false,
+                "pollInvalidated": false,
+                "isSentCagPollCreation": false,
+                "latestEditMsgKey": null,
+                "latestEditSenderTimestampMs": null,
+                "mentionedJidList": [],
+                "groupMentions": [],
+                "isEventCanceled": false,
+                "eventInvalidated": false,
+                "isVcardOverMmsDocument": false,
+                "isForwarded": false,
+                "isQuestion": false,
+                "isSpoiler": false,
+                "questionReplyQuotedMessage": null,
+                "questionResponsesCount": 0,
+                "readQuestionResponsesCount": 0,
+                "forwardsCount": 0,
+                "hasReaction": false,
+                "newsletterAdminProfile": null,
+                "expiredTimestamp": null,
+                "viewMode": "VISIBLE",
+                "messageSecret": {
+                  "0": 176,
+                  "1": 224,
+                  "2": 10,
+                  "3": 9,
+                  "4": 234,
+                  "5": 71,
+                  "6": 87,
+                  "7": 107,
+                  "8": 57,
+                  "9": 96,
+                  "10": 223,
+                  "11": 135,
+                  "12": 58,
+                  "13": 218,
+                  "14": 210,
+                  "15": 158,
+                  "16": 71,
+                  "17": 78,
+                  "18": 23,
+                  "19": 195,
+                  "20": 113,
+                  "21": 4,
+                  "22": 19,
+                  "23": 198,
+                  "24": 25,
+                  "25": 126,
+                  "26": 123,
+                  "27": 16,
+                  "28": 86,
+                  "29": 222,
+                  "30": 241,
+                  "31": 135
+                },
+                "productHeaderImageRejected": false,
+                "lastPlaybackProgress": 0,
+                "isDynamicReplyButtonsMsg": false,
+                "isCarouselCard": false,
+                "parentMsgId": null,
+                "callSilenceReason": null,
+                "isVideoCall": false,
+                "callDuration": null,
+                "callCreator": null,
+                "callParticipants": null,
+                "isCallLink": null,
+                "callLinkToken": null,
+                "terminatedByDeviceSwitch": null,
+                "selfOtherDeviceConnected": null,
+                "bytesSent": null,
+                "bytesReceived": null,
+                "isMdHistoryMsg": false,
+                "stickerSentTs": 0,
+                "isAvatar": false,
+                "lastUpdateFromServerTs": 0,
+                "invokedBotWid": null,
+                "bizBotType": null,
+                "botDeepLinkToken": null,
+                "aiMediaCollectionInfo": null,
+                "expectedImageCount": null,
+                "expectedVideoCount": null,
+                "botResponseTargetId": null,
+                "botPluginType": null,
+                "botPluginReferenceIndex": null,
+                "botPluginSearchProvider": null,
+                "botPluginSearchUrl": null,
+                "botPluginSearchQuery": null,
+                "botPluginMaybeParent": false,
+                "botReelPluginThumbnailCdnUrl": null,
+                "botMessageDisclaimerText": null,
+                "botSessionTransparencyType": null,
+                "botMsgBodyType": null,
+                "botModeSelection": null,
+                "botModeOverride": null,
+                "reportingTokenInfo": {
+                  "stanzaTs": 1782971806,
+                  "reportingToken": {
+                    "0": 62,
+                    "1": 12,
+                    "2": 23,
+                    "3": 118,
+                    "4": 149,
+                    "5": 39,
+                    "6": 56,
+                    "7": 156,
+                    "8": 255,
+                    "9": 161,
+                    "10": 22,
+                    "11": 245,
+                    "12": 121,
+                    "13": 70,
+                    "14": 151,
+                    "15": 152
+                  },
+                  "version": 2,
+                  "reportingTag": {
+                    "0": 1,
+                    "1": 20,
+                    "2": 123,
+                    "3": 44,
+                    "4": 34,
+                    "5": 179,
+                    "6": 72,
+                    "7": 228,
+                    "8": 190,
+                    "9": 48,
+                    "10": 145,
+                    "11": 90,
+                    "12": 86,
+                    "13": 81,
+                    "14": 54,
+                    "15": 23,
+                    "16": 183,
+                    "17": 230,
+                    "18": 241,
+                    "19": 171
+                  }
+                },
+                "hatchMetadataSync": null,
+                "requiresDirectConnection": null,
+                "bizContentPlaceholderType": null,
+                "hostedBizEncStateMismatch": false,
+                "senderOrRecipientAccountTypeHosted": false,
+                "placeholderCreatedWhenAccountIsHosted": false,
+                "groupHistoryBundleMessageKey": null,
+                "groupHistoryBundleMetadata": null,
+                "groupHistoryIndividualMessageInfo": null,
+                "nonJidMentions": null,
+                "links": []
+              }
+            },
+            "engine": "WEBJS",
+            "environment": {
+              "version": "2026.2.2",
+              "engine": "WEBJS",
+              "tier": "CORE",
+              "browser": "/usr/bin/chromium",
+              "platform": "linux/x64",
+              "worker": {
+                "id": null
+              }
+            }
+          }
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Intent Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Intent Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Intent Classifier",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intent Classifier": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Get All Pending Invoices",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [],
+        [],
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Pending Invoices": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Send a text message2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call 'generateInvoice'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'generateInvoice'": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Send a text message3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "5cf557b2-acfc-4c5c-8b41-a9bf3bf8ef71",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9925848573803cd444f994174f00f257ae8f2cd861c158aef0650426695a0f0b"
+  },
+  "id": "DgJop6H6O8UUzGNU",
+  "tags": []
+}

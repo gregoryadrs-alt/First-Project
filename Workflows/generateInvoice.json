@@ -1,0 +1,246 @@
+{
+  "name": "generateInvoice",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {},
+        "name": "={{ $json.customer_name }}",
+        "email": "customer@tokobuahgreg.com",
+        "mobile": "=+6291839193",
+        "redirectUrl": "https://web.mayar.club",
+        "description": "=invoice: {{ $json.invoice_number }}",
+        "expiredAt": "={{ $json.expired_at }}",
+        "items": {
+          "item": [
+            {
+              "rate": "={{ $json.total_amount }}",
+              "description": "=Item description {{ $json.items_string }}"
+            }
+          ]
+        }
+      },
+      "type": "@mayarid/n8n-nodes-mayar.mayar",
+      "typeVersion": 1,
+      "position": [
+        720,
+        352
+      ],
+      "id": "9d6abffa-ee83-41ef-97d6-9edf7a783d6c",
+      "name": "Create Invoice",
+      "credentials": {
+        "mayarApi": {
+          "id": "LDhZaUKxzHVGRlt4",
+          "name": "Mayar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "invoice_number",
+              "type": "any"
+            },
+            {
+              "name": "customer_name"
+            },
+            {
+              "name": "phone_number",
+              "type": "number"
+            },
+            {
+              "name": "total_amount",
+              "type": "number"
+            },
+            {
+              "name": "output_items_parseJson",
+              "type": "any"
+            }
+          ]
+        }
+      },
+      "id": "c055762a-8fe7-4141-a639-df2372f30060",
+      "typeVersion": 1.1,
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        272,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\n// Parse items safely\nlet rawItems = [];\ntry {\n  rawItems = JSON.parse(data.output_items_parseJson || \"[]\");\n} catch (e) {\n  rawItems = [];\n}\n\n// Normalize items to consistent keys: name/price/quantity\nconst items = rawItems\n  .map((it) => {\n    const name = (it.product ?? it.product_name ?? it.name ?? it.item_name ?? \"\")\n      .toString()\n      .trim();\n\n    const quantity = Number(it.quantity ?? 0);\n    const price = Number(it.price ?? 0);\n\n    return { name, quantity, price };\n  })\n  // Drop bad rows (empty name or zero quantity)\n  .filter((it) => it.name && it.quantity > 0);\n\nlet subtotal = 0;\n\nconst rowsHtml = items\n  .map((it, i) => {\n    const line = it.price * it.quantity;\n    subtotal += line;\n\n    return `\n      <tr>\n        <td>${i + 1}</td>\n        <td>${it.name}</td>\n        <td style=\"text-align:right;\">Rp ${it.price.toLocaleString(\"id-ID\")}</td>\n        <td style=\"text-align:right;\">${it.quantity}</td>\n        <td style=\"text-align:right;\">Rp ${line.toLocaleString(\"id-ID\")}</td>\n      </tr>\n    `;\n  })\n  .join(\"\");\n\n// Ensure total is numeric (fallback to subtotal if missing)\nconst totalAmount = Number(data.total_amount ?? 0) || subtotal;\n\n// ✅ One-line items string with subtotal & total\nconst items_string =\n  items\n    .map((it) => `${it.name} x${it.quantity} @ Rp ${it.price.toLocaleString(\"id-ID\")}`)\n    .join(\", \") +\n  ` | Subtotal: Rp ${subtotal.toLocaleString(\"id-ID\")}` +\n  ` | Total: Rp ${totalAmount.toLocaleString(\"id-ID\")}`;\n\n// Expired at +1 day (ISO)\nconst expiredAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();\n\n// OPTIONAL but useful for Mayar \"Items\" field if it needs structured items\nconst mayar_items = items.map((it) => ({\n  name: it.name,\n  quantity: it.quantity,\n  price: it.price,\n}));\n\nreturn [\n  {\n    json: {\n      invoice_number: data.invoice_number || `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, \"\")}`,\n      customer_name: (data.customer_name ?? \"\").toString(),\n      phone_number: (data.phone_number ?? \"\").toString(),\n      rowsHtml,\n      subtotal,\n      total_amount: totalAmount,\n      invoice_date: new Date().toLocaleDateString(\"id-ID\"),\n      items_string,\n      expired_at: expiredAt,\n      mayar_items, // <-- map this into Mayar node \"Items\" if required\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        352
+      ],
+      "id": "c5f810bb-19fb-4888-ab8c-9706e2fe9da2",
+      "name": "Prepare Data"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "gvo2C20vOE9gNiQT",
+          "mode": "list",
+          "cachedResultName": "Invoices",
+          "cachedResultUrl": "/projects/dMsIA3pEwYnpuDsV/datatables/gvo2C20vOE9gNiQT"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone_number": "={{ $('Prepare Data').item.json.phone_number }}",
+            "name": "={{ $('Prepare Data').item.json.customer_name }}",
+            "content": "={{ $('When Executed by Another Workflow').item.json.output_items_parseJson }}",
+            "total_amount": "={{ $('Prepare Data').item.json.total_amount }}",
+            "status": "PENDING",
+            "payment_link": "={{ $json.data.link }}",
+            "invoice_number": "={{ $('Prepare Data').item.json.invoice_number }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "phone_number",
+              "displayName": "phone_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "total_amount",
+              "displayName": "total_amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "payment_link",
+              "displayName": "payment_link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "invoice_number",
+              "displayName": "invoice_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        912,
+        352
+      ],
+      "id": "3b6c8c25-17c4-4bed-93d2-6bd1f37834ea",
+      "name": "Insert row"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Create Invoice": {
+      "main": [
+        [
+          {
+            "node": "Insert row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Prepare Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Data": {
+      "main": [
+        [
+          {
+            "node": "Create Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert row": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "d9df4f2a-2a07-47d5-a083-1218921cdd24",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9925848573803cd444f994174f00f257ae8f2cd861c158aef0650426695a0f0b"
+  },
+  "id": "nlLnpNsiAOc34po5",
+  "tags": []
+}

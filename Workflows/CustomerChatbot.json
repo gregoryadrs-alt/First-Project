@@ -1,0 +1,739 @@
+{
+  "name": "CustomerChatbot",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "c055762a-8fe7-4141-a639-df2372f30060",
+      "typeVersion": 1.1,
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        192,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.waha.payload.body }}",
+        "options": {
+          "systemMessage": "=You are Arif, a friendly, helpful, and highly knowledgeable virtual assistant for \"Mie Soetta & Loenpia Rawit\", a popular culinary business in Semarang specializing in delicious noodles and spicy spring rolls. Your primary goal is to assist customers with product knowledge and immediately execute orders using the invoice generator.\nShop Locations:\n1.\tJl. Arteri Soekarno Hatta No. 20b, Palebon, Kec. Pedurungan, Kota Semarang, Jawa Tengah 50246, Indonesia\n2.\tJl. Suratmo No. 29X, Semarang Barat, Kota Semarang, Jawa Tengah, Indonesia\nKey Guidelines:\n1. Persona & Tone:\n•\tIdentity: You are Arif.\n•\tTone: Warm, welcoming, helpful, and polite but relaxed (casual Indonesian, not overly formal). Use friendly greetings like \"Halo Sahabat Soetta!\" or \"Halo Kak!\". Avoid using formal/religious greetings like \"Assalamu’alaikum\".\n•\tStyle: Patient and responsive. Use Markdown for readability. Escape double quotes when necessary.\n2. Expertise & Data Sources:\n•\tPrimary Brain: You rely strictly on the products table (N8N Datatable).\n•\tProduct Descriptions: Read the description column to explain the taste, toppings, portions, and benefits of the menu.\no\tExample: Description \"Mie kenyal dengan ayam cincang gurih melimpah\" -> \"Mienya kenyal bumbunya meresap, ditambah toping ayam cincang gurih yang melimpah, Kak.\"\n•\tAccuracy: Do not invent details. If an item or price is not in the table, check SerpAPI2 or politely admit you don't know.\n3. Tool Utilization:\n•\tproducts (N8N Datatable):\no\tUSAGE: Check this immediately when a user asks about menu availability, prices, or product details.\no\tConstraint: Only sell items listed here.\n•\tgenerateInvoice (CRITICAL TOOL - PRIORITY HIGH):\no\tTRIGGER: You MUST call this tool IMMEDIATELY when the user confirms an item and quantity, or expresses intent to buy (e.g., \"oke saya ambil\", \"mau beli mi ayam komplit 2\", \"bungkus\", \"totalnya berapa\", \"checkout\", \"deal\").\no\tSTRICT RULE: DO NOT ask for the user's Name or Phone Number. (The system already knows who they are).\no\tSTRICT RULE: DO NOT ask \"Ada lagi yang ingin ditambahkan?\" (Is there anything else?) before generating the invoice. Generate the invoice FIRST.\no\tSTRICT RULE: If generateInvoice returns a payment URL, display it as plain text only. Do not convert it into markdown hyperlink format. Do not use [url](url).\no\tAction: Call generateInvoice with the confirmed items and quantities.\no\tPost-Action: Display the result returned by the tool.\n•\tbot_handoff: Use this tool if the user explicitly requests to talk to a human or has a complex complaint.\n•\tSerpAPI2: Fallback for general facts or basic location/area queries only.\nConversation Flow & Closing the Sale:\n1.\tConsult: User asks -> Search products -> Reply with Description & Price.\n2.\tNudge: After explaining, gently push for a decision: \"Mau langsung dipesan Mie Ayam Komplitnya, Kak?\" or \"Mau sekalian dicoba Loenpia Rawitnya buat camilan?\"\n3.\tExecute: As soon as they say \"Yes\", specify a quantity, or show checkout intent, STOP TALKING AND CALL THE TOOL.\nStandard Operating Procedure for Checkout (Strict):\n•\tStep 1: Intent Detected: User says \"Oke aku mau mi ayam jumbo 2\", \"Mau bayar\", or \"Bungkus Paket Timi 1 nya\".\n•\tStep 2: Verification: Ensure you know which item and how many. (If they just say \"Aku mau beli dong\", ask \"Mau pesan menu apa dan berapa porsi, Kak?\").\n•\tStep 3: IMMEDIATE ACTION: Once Item + Qty is known, Call generateInvoice.\no\tDo NOT ask for Name.\no\tDo NOT ask for Address/Ongkir.\no\tDo NOT ask \"Are you sure?\".\n•\tStep 4: Confirmation: Present the generated invoice summary to the user.\nImportant Notes:\n•\tSkip Data Collection: Customer Name and Phone Number are automatically handled by the system (WAHA). Do not mention them.\n•\tNo Shipping/Ongkir: Do not ask for address or shipping costs during the chat.\n\n",
+          "returnIntermediateSteps": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        448,
+        368
+      ],
+      "id": "bacdd502-de04-48f8-bf4b-7c06450b99fb",
+      "name": "AI Agent",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.user.user[0].phone_number }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        432,
+        608
+      ],
+      "id": "69916686-b55f-4436-bcc7-580ff3632bf7",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "amount": "={{ Math.floor(Math.random()*5)+1 }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        784,
+        368
+      ],
+      "id": "74fe1079-b7a8-45cb-8a6e-5e61a597f7ba",
+      "name": "Wait",
+      "webhookId": "c6398a02-e933-424f-ba8f-a1a579ae1598"
+    },
+    {
+      "parameters": {
+        "resource": "Chatting",
+        "operation": "Send Seen",
+        "session": "={{ $('Start').item.json.waha.session }}",
+        "chatId": "={{ $('Start').item.json.waha.payload.from }}",
+        "messageId": "={{ $('Start').item.json.waha.payload.id }}",
+        "participant": "",
+        "requestOptions": {}
+      },
+      "type": "@devlikeapro/n8n-nodes-waha.WAHA",
+      "typeVersion": 202502,
+      "position": [
+        992,
+        368
+      ],
+      "id": "efa2c1f2-b845-451d-b30f-e48c686de25e",
+      "name": "Send Seen",
+      "credentials": {
+        "wahaApi": {
+          "id": "zYVfGiFtLLjRjdn0",
+          "name": "WAHA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": "={{ Math.floor(Math.random()*5)+1 }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1200,
+        368
+      ],
+      "id": "2f8b515f-98c8-4d49-8f83-ffbe038ab3dd",
+      "name": "Wait1",
+      "webhookId": "987e4799-7d61-49f3-a2a9-3a59284ff33b"
+    },
+    {
+      "parameters": {
+        "resource": "Chatting",
+        "operation": "Start Typing",
+        "session": "={{ $('Start').item.json.waha.session }}",
+        "chatId": "={{ $('Start').item.json.waha.payload.from }}",
+        "requestOptions": {}
+      },
+      "type": "@devlikeapro/n8n-nodes-waha.WAHA",
+      "typeVersion": 202502,
+      "position": [
+        1408,
+        368
+      ],
+      "id": "a0868e8c-9606-48c4-982b-1a10f62067a4",
+      "name": "Start Typing",
+      "credentials": {
+        "wahaApi": {
+          "id": "zYVfGiFtLLjRjdn0",
+          "name": "WAHA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": "={{ Math.floor(Math.random()*5)+1 }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1616,
+        368
+      ],
+      "id": "6ec26172-7f1d-42a9-9dae-06b280079d8c",
+      "name": "Wait2",
+      "webhookId": "777a71df-cf84-4993-8975-23442abe46d3"
+    },
+    {
+      "parameters": {
+        "resource": "Chatting",
+        "operation": "Stop Typing",
+        "session": "={{ $('Start').item.json.waha.session }}",
+        "chatId": "={{ $('Start').item.json.waha.payload.from }}",
+        "requestOptions": {}
+      },
+      "type": "@devlikeapro/n8n-nodes-waha.WAHA",
+      "typeVersion": 202502,
+      "position": [
+        1824,
+        368
+      ],
+      "id": "8c6d00bf-8c29-4849-a76f-9a4d8080fcc5",
+      "name": "Stop Typing",
+      "credentials": {
+        "wahaApi": {
+          "id": "zYVfGiFtLLjRjdn0",
+          "name": "WAHA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": "={{ Math.floor(Math.random()*3)+1 }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2032,
+        368
+      ],
+      "id": "1ce99358-dba7-4c35-a5b9-6ca9d860d71b",
+      "name": "Wait3",
+      "webhookId": "c1eb06a6-5f37-470c-9f49-1ca9d439145f"
+    },
+    {
+      "parameters": {
+        "resource": "Chatting",
+        "operation": "Send Text",
+        "session": "={{ $('Start').item.json.waha.session }}",
+        "chatId": "={{ $('Start').item.json.waha.payload.from }}",
+        "text": "={{ $('AI Agent').item.json.output }}",
+        "requestOptions": {}
+      },
+      "type": "@devlikeapro/n8n-nodes-waha.WAHA",
+      "typeVersion": 202502,
+      "position": [
+        2224,
+        368
+      ],
+      "id": "940c8292-0d7f-47b0-b9cc-c8ec88119269",
+      "name": "Send a text message",
+      "credentials": {
+        "wahaApi": {
+          "id": "zYVfGiFtLLjRjdn0",
+          "name": "WAHA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "k9D7toQXjrZK6H01",
+          "mode": "list",
+          "cachedResultName": "Products",
+          "cachedResultUrl": "/projects/dMsIA3pEwYnpuDsV/datatables/k9D7toQXjrZK6H01"
+        },
+        "returnAll": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Return_All', ``, 'boolean') }}",
+        "orderBy": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Order_By', ``, 'boolean') }}"
+      },
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1.1,
+      "position": [
+        544,
+        592
+      ],
+      "id": "0e51b0f4-9a3a-469a-9c1e-f1c5827fefd0",
+      "name": "products"
+    },
+    {
+      "parameters": {
+        "description": "call this tool to generate invoice",
+        "workflowId": {
+          "__rl": true,
+          "value": "nlLnpNsiAOc34po5",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/nlLnpNsiAOc34po5",
+          "cachedResultName": "generateInvoice"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone_number": "={{ $json.user.user[0].phone_number }}",
+            "total_amount": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('total_amount', `fetch total_amount of the orders`, 'number') }}",
+            "invoice_number": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('invoice_number', `Formatnya adalah sebagai berikut  format : INV - XXXX\nFormat nomor invoice yang saya inginkan adalah: INV-XXX (contoh: INV-0001, INV-0002, dst. dengan padding 4 digit).`, 'string') }}",
+            "customer_name": "={{ $json.user.user[0].name }}",
+            "output_items_parseJson": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('output_items_parseJson', `fetch output_items_parseJson  `, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "invoice_number",
+              "displayName": "invoice_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "customer_name",
+              "displayName": "customer_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "phone_number",
+              "displayName": "phone_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "total_amount",
+              "displayName": "total_amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "output_items_parseJson",
+              "displayName": "output_items_parseJson",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        784,
+        608
+      ],
+      "id": "e732c092-c8ba-4ad1-82aa-185a55bab588",
+      "name": "generateInvoice"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        320,
+        576
+      ],
+      "id": "2ec24ff2-54e3-4200-83f8-e86bcf8d05ea",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "wW7aE1ol2thfp4oq",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        656,
+        608
+      ],
+      "id": "f674d14d-2dd8-4438-b305-8c30bf076921",
+      "name": "Calculator"
+    }
+  ],
+  "pinData": {
+    "Start": [
+      {
+        "json": {
+          "user": {
+            "user": [
+              {
+                "phone_number": 157930276028428,
+                "name": "Toko Buah Greg",
+                "is_admin": false,
+                "chat_id": "false_157930276028428@lid_AC53E26CB4F820C6AEEF0C7D6D6B5D56",
+                "id": 1,
+                "createdAt": "2026-03-10T10:37:13.255Z",
+                "updatedAt": "2026-03-10T10:37:13.255Z"
+              }
+            ]
+          },
+          "waha": {
+            "id": "evt_01kwbb6s91vjkm61nwyb0q34a4",
+            "timestamp": 1782792283425,
+            "event": "message",
+            "session": "default",
+            "metadata": {},
+            "me": {
+              "id": "6282230372086@c.us",
+              "pushName": "Toko Buah Greg"
+            },
+            "payload": {
+              "id": "false_157930276028428@lid_ACBFBCFE6C4890C498A34AF2B11A7386",
+              "timestamp": 1782792283,
+              "from": "157930276028428@lid",
+              "fromMe": false,
+              "source": "app",
+              "to": "6282230372086@c.us",
+              "body": "Halo kak aku mau checkout kurma ajwa 2 kg ya",
+              "hasMedia": false,
+              "media": null,
+              "ack": 1,
+              "ackName": "SERVER",
+              "location": null,
+              "vCards": [],
+              "_data": {
+                "id": {
+                  "fromMe": false,
+                  "remote": "157930276028428@lid",
+                  "id": "ACBFBCFE6C4890C498A34AF2B11A7386",
+                  "_serialized": "false_157930276028428@lid_ACBFBCFE6C4890C498A34AF2B11A7386"
+                },
+                "viewed": false,
+                "body": "Halo kak aku mau checkout kurma ajwa 2 kg ya",
+                "type": "chat",
+                "t": 1782792283,
+                "clientReceivedTsMillis": 1782792283308,
+                "serverStoreTimeMicros": 1782792283726647,
+                "notifyName": "G",
+                "from": "157930276028428@lid",
+                "to": "6282230372086@c.us",
+                "ack": 1,
+                "invis": false,
+                "isNewMsg": true,
+                "star": false,
+                "kicNotified": false,
+                "recvFresh": true,
+                "isFromTemplate": false,
+                "isAdsMedia": false,
+                "pollInvalidated": false,
+                "isSentCagPollCreation": false,
+                "latestEditMsgKey": null,
+                "latestEditSenderTimestampMs": null,
+                "mentionedJidList": [],
+                "groupMentions": [],
+                "isEventCanceled": false,
+                "eventInvalidated": false,
+                "isVcardOverMmsDocument": false,
+                "isForwarded": false,
+                "isQuestion": false,
+                "isSpoiler": false,
+                "questionReplyQuotedMessage": null,
+                "questionResponsesCount": 0,
+                "readQuestionResponsesCount": 0,
+                "forwardsCount": 0,
+                "hasReaction": false,
+                "newsletterAdminProfile": null,
+                "expiredTimestamp": null,
+                "viewMode": "VISIBLE",
+                "messageSecret": {
+                  "0": 229,
+                  "1": 57,
+                  "2": 238,
+                  "3": 227,
+                  "4": 82,
+                  "5": 128,
+                  "6": 134,
+                  "7": 24,
+                  "8": 127,
+                  "9": 176,
+                  "10": 199,
+                  "11": 26,
+                  "12": 41,
+                  "13": 33,
+                  "14": 86,
+                  "15": 250,
+                  "16": 66,
+                  "17": 140,
+                  "18": 115,
+                  "19": 110,
+                  "20": 167,
+                  "21": 146,
+                  "22": 250,
+                  "23": 131,
+                  "24": 87,
+                  "25": 143,
+                  "26": 104,
+                  "27": 120,
+                  "28": 103,
+                  "29": 80,
+                  "30": 47,
+                  "31": 27
+                },
+                "productHeaderImageRejected": false,
+                "lastPlaybackProgress": 0,
+                "isDynamicReplyButtonsMsg": false,
+                "isCarouselCard": false,
+                "parentMsgId": null,
+                "callSilenceReason": null,
+                "isVideoCall": false,
+                "callDuration": null,
+                "callCreator": null,
+                "callParticipants": null,
+                "isCallLink": null,
+                "callLinkToken": null,
+                "terminatedByDeviceSwitch": null,
+                "selfOtherDeviceConnected": null,
+                "bytesSent": null,
+                "bytesReceived": null,
+                "isMdHistoryMsg": false,
+                "stickerSentTs": 0,
+                "isAvatar": false,
+                "lastUpdateFromServerTs": 0,
+                "invokedBotWid": null,
+                "bizBotType": null,
+                "botDeepLinkToken": null,
+                "aiMediaCollectionInfo": null,
+                "expectedImageCount": null,
+                "expectedVideoCount": null,
+                "botResponseTargetId": null,
+                "botPluginType": null,
+                "botPluginReferenceIndex": null,
+                "botPluginSearchProvider": null,
+                "botPluginSearchUrl": null,
+                "botPluginSearchQuery": null,
+                "botPluginMaybeParent": false,
+                "botReelPluginThumbnailCdnUrl": null,
+                "botMessageDisclaimerText": null,
+                "botSessionTransparencyType": null,
+                "botMsgBodyType": null,
+                "botModeSelection": null,
+                "botModeOverride": null,
+                "reportingTokenInfo": {
+                  "stanzaTs": 1782792283,
+                  "reportingToken": {
+                    "0": 203,
+                    "1": 254,
+                    "2": 30,
+                    "3": 119,
+                    "4": 119,
+                    "5": 82,
+                    "6": 251,
+                    "7": 89,
+                    "8": 152,
+                    "9": 162,
+                    "10": 20,
+                    "11": 189,
+                    "12": 243,
+                    "13": 222,
+                    "14": 234,
+                    "15": 128
+                  },
+                  "version": 2,
+                  "reportingTag": {
+                    "0": 1,
+                    "1": 20,
+                    "2": 31,
+                    "3": 233,
+                    "4": 112,
+                    "5": 99,
+                    "6": 233,
+                    "7": 130,
+                    "8": 144,
+                    "9": 179,
+                    "10": 247,
+                    "11": 210,
+                    "12": 214,
+                    "13": 134,
+                    "14": 138,
+                    "15": 132,
+                    "16": 216,
+                    "17": 93,
+                    "18": 45,
+                    "19": 132
+                  }
+                },
+                "hatchMetadataSync": null,
+                "requiresDirectConnection": null,
+                "bizContentPlaceholderType": null,
+                "hostedBizEncStateMismatch": false,
+                "senderOrRecipientAccountTypeHosted": false,
+                "placeholderCreatedWhenAccountIsHosted": false,
+                "groupHistoryBundleMessageKey": null,
+                "groupHistoryBundleMetadata": null,
+                "groupHistoryIndividualMessageInfo": null,
+                "nonJidMentions": null,
+                "links": []
+              }
+            },
+            "engine": "WEBJS",
+            "environment": {
+              "version": "2026.2.2",
+              "engine": "WEBJS",
+              "tier": "CORE",
+              "browser": "/usr/bin/chromium",
+              "platform": "linux/x64",
+              "worker": {
+                "id": null
+              }
+            }
+          }
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Send Seen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Seen": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Start Typing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Typing": {
+      "main": [
+        [
+          {
+            "node": "Wait2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait2": {
+      "main": [
+        [
+          {
+            "node": "Stop Typing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stop Typing": {
+      "main": [
+        [
+          {
+            "node": "Wait3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait3": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "products": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "generateInvoice": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "22a64158-c1fc-49a7-a092-2268c3b0019a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9925848573803cd444f994174f00f257ae8f2cd861c158aef0650426695a0f0b"
+  },
+  "id": "pwrTPilW76CQuDVk",
+  "tags": []
+}
