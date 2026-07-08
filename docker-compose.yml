@@ -1,0 +1,23 @@
+services:
+  waha:
+    image: devlikeapro/waha
+    ports:
+      - "3000:3000"
+    volumes:
+      - waha-data:/app/data
+    env_file:
+      - .env
+  n8n:
+    image: n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n-data:/home/node/.n8n
+    env_file:
+      - .env
+
+volumes:
+  waha-data:
+    driver: local
+  n8n-data:
+    driver: local
